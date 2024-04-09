@@ -7,42 +7,70 @@ function FileUpload() {
     inputText: '',
     file: null
   })
-  const baseUrl = 'https://gd1urnjh12.execute-api.us-east-2.amazonaws.com/main/'
+  const [isLoaded, setIsLoaded] = useState(false)
+  const [isError, setIsError] = useState(false)
+  const [message, setMessage] = useState('')
+  const baseUrl = 'https://gd1urnjh12.execute-api.us-east-2.amazonaws.com/prod/'
   const uploadFileToS3 = async (file, signedUrl) => {
-    console.log(file, signedUrl)
     try {
+      setIsLoaded(true);
       const response = await fetch(signedUrl, {
         method: 'PUT',
         body: file,
         headers: {
           'Content-Type': file.type,
         },
-      });
-
+      })
+      console.log("data==", response)
       if (!response.ok) {
         throw new Error('Failed to upload file to S3');
       }
-
-      console.log('File uploaded successfully');
+      return true
     } catch (error) {
       console.error('Error uploading file to S3:', error);
+      return false
     }
   };
+  const CreateDynamoDBItem = async (text, filePath) => {
+    try {
+      const response = await fetch(`${baseUrl}createrecord?text=${text}&filePath=${filePath}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+      });
+      if (response.status === 201) {
+        const responseData = await response.json();
+        setMessage('Item inserted successfully');
+      }
+    } catch (error) {
+      console.error('Error inserting item:', error);
+    }
+  }
+
   const handleSubmit = async (e) => {
     try {
       e.preventDefault();
+      setMessage('Uploading file...');
+      setIsLoaded(true);
       const signedurl = await fetch(`${baseUrl}signedurl?filename=${formData?.file?.name}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
         },
       });
-      console.log("res==", signedurl);
       if (signedurl.status === 200) {
+        setIsLoaded(false);
+        setMessage('File uploaded successfully');
         const responseData = await signedurl.json();
-        console.log(responseData);
-        const response = await uploadFileToS3(formData.file, responseData.url);
-        console.log(response);
+        console.log("signed response", responseData);
+        const { url, filePath } = responseData;
+        const response = await uploadFileToS3(formData.file, url);
+        console.log("uplooad response==", response);
+        if (response) {
+          setMessage('File uploaded successfully');
+          CreateDynamoDBItem(formData.inputText, filePath);
+        }
 
       }
     } catch (error) {
@@ -52,7 +80,6 @@ function FileUpload() {
 
   const handleInputChange = (e) => {
     const { files, name, value } = e.target
-    console.log(files, name, value)
     if (files) {
       setFormData({
         ...formData,
@@ -77,8 +104,9 @@ function FileUpload() {
             <label className='basis-1/3'>Input File</label>
             <input type="file" className='basis-2/3' name='file' onChange={handleInputChange} />
           </div>
-          <button type='submit'>Submit</button>
+          {isLoaded ? "..loading" : <button type='submit'>Submit</button>}
         </form>
+        {message.length > 0 && <p>{message}</p>}
       </div>
     </div>
   )
