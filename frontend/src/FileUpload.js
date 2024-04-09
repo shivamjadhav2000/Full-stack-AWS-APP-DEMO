@@ -21,7 +21,6 @@ function FileUpload() {
           'Content-Type': file.type,
         },
       })
-      console.log("data==", response)
       if (!response.ok) {
         throw new Error('Failed to upload file to S3');
       }
@@ -66,7 +65,6 @@ function FileUpload() {
         console.log("signed response", responseData);
         const { url, filePath } = responseData;
         const response = await uploadFileToS3(formData.file, url);
-        console.log("uplooad response==", response);
         if (response) {
           setMessage('File uploaded successfully');
           CreateDynamoDBItem(formData.inputText, filePath);
