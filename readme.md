@@ -93,7 +93,7 @@
 
     permissions:- 
 
-    -> AmazonS3FullAccess	AWS managed	10
+    -> AmazonS3FullAccess
     -> AWSLambdaBasicExecutionRole-0e0e8d94
 
     although this role acess can be optimised by only given it the access to read and write which i will do but initially ia have given full access to get started
@@ -122,9 +122,9 @@
   ```
   permissions:-
 
-  AmazonDynamoDBFullAccess	AWS managed	4
+  AmazonDynamoDBFullAccess
 
-  AmazonS3FullAccess	AWS managed	10
+  AmazonS3FullAccess
   
   AWSLambdaBasicExecutionRole-0907dcde
   ```
