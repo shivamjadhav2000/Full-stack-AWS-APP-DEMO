@@ -1,11 +1,10 @@
 import { unmarshall } from '@aws-sdk/util-dynamodb';
 import { EC2 } from '@aws-sdk/client-ec2';
 
-const ec2 = new EC2({ region: 'us-east-2' }); // Replace with your desired region
+const ec2 = new EC2({ region: 'us-east-2' });
 
 export const handler = async (event, context) => {
   try {
-    // Extract necessary information from the DynamoDB event (assuming a single INSERT record)
     const record = event.Records[0];
     if (record.eventName !== 'INSERT') {
       console.log('Ignoring non-INSERT events.');
@@ -13,33 +12,60 @@ export const handler = async (event, context) => {
     }
 
     const newImage = unmarshall(record.dynamodb.NewImage);
+    const recordId = newImage.id
+    const tableName = 'filedatabase'
     console.log('New image data:', newImage);
 
-    // Validate data existence before creating VM (adjust based on your DynamoDB schema)
     if (!newImage) {
       console.error('Missing required data in DynamoDB trigger.');
       return { statusCode: 400, body: 'Data validation failed.' };
     }
 
-    // Extract instance type and user script from DynamoDB data
-    const userScript = `
-    #!/usr/bin/env python
-    
-    print("Hello, World!")
-    `;
-
-    const encodedUserData = Buffer.from(userScript).toString('base64');
-    // Create EC2 instance parameters (consider adding more parameters as needed)
+    const bucketName = 'myawsbucket0028'
+    const objectKey = 'script.py'
+    const userData = `#!/bin/bash
+        # Install Python3 and pip (if not already installed)
+        sudo yum update
+        sudo yum install python3 pip -y
+        sudo pip3 install --upgrade pip 
+        pip install boto3
+        # Download Python script from S3
+        echo "hellooooo" > /tmp/he33o.txt
+        echo ${bucketName} > /tmp/bucketname.txt
+        echo ${objectKey} > /tpm/objectKey.txt
+        echo s3://${bucketName}/${objectKey} > /tmp/completepath.txt
+        aws s3 cp s3://${bucketName}/${objectKey} /tmp/script.py 
+        # Execute Python script with parameters
+        echo command /tmp/script.py ${recordId} ${tableName} > loggggs.txt
+        python3 /tmp/script.py ${recordId} ${tableName} ${recordId}
+        `;
+    const iamRoleArn = 'arn:aws:iam::058264531320:instance-profile/ec2-s3-and-dynamodb-full-access'
+    const tags = [
+      {
+        Key: 'Name',
+        Value: recordId
+      },
+    ];
+    const encodedUserData = Buffer.from(userData).toString('base64');
     const params = {
-      ImageId: 'ami-0900fe555666598a2', // Replace with appropriate AMI ID for your region and needs
+      ImageId: 'ami-0900fe555666598a2',
       InstanceType: "t2.micro",
       MaxCount: 1,
       MinCount: 1,
       SecurityGroupIds: [
-        "sg-080b8993d2b44831a"
+        "sg-0c7b28c9ba6ddee7c"
       ],
       SubnetId: "subnet-0c954981639af97d1",
-      UserData: encodedUserData
+      UserData: encodedUserData,
+      TagSpecifications: [
+        {
+          ResourceType: "instance",
+          Tags: tags
+        }
+      ],
+      IamInstanceProfile: {
+        Arn: iamRoleArn
+      },
     };
 
     // Create the EC2 instance
