@@ -1,4 +1,6 @@
-# Lovus Project Readme Documentation
+# Project Readme Documentation
+this is the project i have completed to teach community about the aws serverless components and build a full stack serverless high scale web app.
+
 ## Dependencies
 
   for this project i have used the following aws services:-
